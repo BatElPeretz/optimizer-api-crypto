@@ -1,0 +1,62 @@
+# Composio integration manifest for Cross-Chain Route Optimizer
+# Submit via: https://docs.composio.dev/introduction/foundations/components/integrations/custom-integration
+#
+# Auth type: CUSTOM_AUTH — L402 Lightning Network
+# The agent must complete the L402 payment flow before obtaining valid credentials.
+# See /llms.txt for the full payment flow description.
+
+name: cross-chain-route-optimizer
+description: >
+  Find the mathematically optimal cross-chain EVM token swap route.
+  Compares 1inch and Li.Fi aggregators using True Execution Cost (TEC) analysis:
+  TEC = slippage + gas + bridge_fee + time_penalty.
+  Returns ranked routes with full cost breakdowns.
+  Supports Ethereum, Arbitrum, Base, Optimism, Polygon.
+  Monetised via L402 Lightning Network (≈$0.006 per query).
+
+logo: https://your-domain.com/logo.png
+categories:
+  - DeFi
+  - Blockchain
+  - Finance
+  - Trading
+
+auth:
+  # L402 is a custom HTTP auth scheme (IETF draft).
+  # The agent pays a Lightning invoice to obtain credentials.
+  mode: CUSTOM_AUTH
+  fields:
+    - name: macaroon
+      displayName: L402 Macaroon Token
+      description: >
+        Base64url-encoded macaroon obtained from the WWW-Authenticate header
+        of a 402 response. Valid for 600 seconds after Lightning payment.
+      type: string
+      required: true
+
+    - name: preimage
+      displayName: Lightning Payment Preimage
+      description: >
+        64-character hex string (32 bytes) returned by your Lightning wallet
+        after paying the BOLT11 invoice. Proves payment was made.
+        Format: SHA256(preimage) == payment_hash embedded in the macaroon.
+      type: string
+      required: true
+
+  # The Authorization header format Composio will inject:
+  # Authorization: L402 <macaroon>:<preimage>
+  auth_header: "L402 {{macaroon}}:{{preimage}}"
+
+# Point to our live OpenAPI spec
+openapi_spec_url: https://your-domain.com/openapi.json
+
+# Key actions agents will use
+actions:
+  - name: get_optimal_swap_route
+    display_name: Get Optimal Cross-Chain Swap Route
+    description: >
+      Returns the cheapest cross-chain token swap route ranked by True Execution Cost.
+      Queries 1inch and Li.Fi in parallel and returns the mathematically optimal route.
+      Use this before executing any DeFi token swap to minimise slippage + gas + bridge costs.
+    operation_id: get_optimal_quote_v1_quote_post
+    requires_auth: true
