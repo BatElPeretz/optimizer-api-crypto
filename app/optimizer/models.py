@@ -161,58 +161,101 @@ class QuoteRequest(BaseModel):
     # --- What to swap ---
     token_in: Annotated[str, Field(
         min_length=1, max_length=10,
-        description="Input token ticker symbol, e.g. 'ETH'",
+        description=(
+            "Input token ticker symbol (uppercase). "
+            "Supported values: 'ETH', 'USDC', 'USDT', 'DAI', 'WETH'. "
+            "Must differ from token_out."
+        ),
         examples=["ETH"],
     )]
 
     token_out: Annotated[str, Field(
         min_length=1, max_length=10,
-        description="Output token ticker symbol, e.g. 'USDC'",
+        description=(
+            "Output token ticker symbol (uppercase). "
+            "Supported values: 'ETH', 'USDC', 'USDT', 'DAI', 'WETH'. "
+            "Must differ from token_in."
+        ),
         examples=["USDC"],
     )]
 
     amount_in: Annotated[float, Field(
         gt=0,
-        description="Input amount in token units, e.g. 5.0 for 5 ETH",
+        description=(
+            "Input amount in native token units (not USD, not wei). "
+            "Example: 5.0 means 5 ETH, not 5 USDC. Must be > 0."
+        ),
         examples=[5.0],
     )]
 
     amount_in_usd: Annotated[float, Field(
         gt=0,
-        description="USD value of amount_in at request time (agent pre-computes this)",
+        description=(
+            "Current USD value of amount_in. The agent must pre-compute this "
+            "from a price oracle (e.g. CoinGecko) before calling the API. "
+            "Example: if amount_in=5.0 ETH and ETH=$3700, set amount_in_usd=18500.0. "
+            "This value drives the slippage cost component of TEC."
+        ),
         examples=[18500.0],
     )]
 
     target_price_usd: Annotated[float, Field(
         gt=0,
-        description="Current spot price of token_out in USD",
+        description=(
+            "Current spot price of token_out in USD, fetched by the agent from a price oracle. "
+            "Used to compute Net Output Value (NOV = amount_out × target_price_usd). "
+            "For stablecoins (USDC, USDT, DAI), this is typically 1.0. "
+            "For ETH as token_out, use the current ETH/USD price."
+        ),
         examples=[1.0],
     )]
 
     chains: Annotated[list[Chain], Field(
         min_length=1, max_length=5,
-        description="Chains to include in route search",
-        examples=[["ethereum", "arbitrum", "base"]],
+        description=(
+            "List of EVM chains to include in the route search. "
+            "Supported values: 'ethereum', 'arbitrum', 'base', 'optimism', 'polygon'. "
+            "Including multiple chains enables cross-chain route discovery via Li.Fi. "
+            "Single-chain lists restrict results to same-chain DEX routes (1inch). "
+            "No duplicates allowed."
+        ),
+        examples=[["arbitrum", "base"]],
     )]
 
     # --- Constraints ---
     max_slippage_bps: Annotated[int, Field(
         default=100, ge=1, le=2000,
-        description="Maximum acceptable slippage in basis points (default 100 = 1%)",
+        description=(
+            "Maximum acceptable slippage in basis points (1 bps = 0.01%). "
+            "Routes with slippage_bps above this threshold are disqualified. "
+            "Default: 100 (1%). For large orders, consider raising to 200–300. "
+            "For stablecoin swaps, consider lowering to 10–30."
+        ),
+        examples=[100],
     )]
 
     agent_time_value_per_second: Annotated[float, Field(
         default=0.0001, ge=0.0,
         description=(
-            "USD value of one second of waiting time for the calling agent. "
-            "Used in the time penalty component of TEC. "
-            "Default $0.36/hr — tune per agent SLA."
+            "USD value of one second of agent waiting time. "
+            "Multiplied by bridge_time_seconds to compute the time penalty cost component. "
+            "Default 0.0001 USD/s ≈ $0.36/hr. "
+            "Raise this for time-sensitive agents (e.g. 0.01 = $36/hr). "
+            "Set to 0.0 to ignore bridge time entirely in the TEC score."
         ),
+        examples=[0.0001],
     )]
 
     max_bridge_time_seconds: Annotated[int, Field(
         default=900, ge=0,
-        description="Hard upper limit on acceptable bridge time (seconds). Routes exceeding this are excluded.",
+        description=(
+            "Hard upper limit on cross-chain bridge settlement time in seconds. "
+            "Routes with bridge_time_seconds above this value are excluded entirely "
+            "(not just penalised). Default: 900 (15 minutes). "
+            "Set to 0 to allow only same-chain routes. "
+            "Set to 3600 to allow routes up to 1 hour."
+        ),
+        examples=[900],
     )]
 
     @field_validator("chains")

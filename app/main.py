@@ -4,9 +4,9 @@ main.py
 FastAPI application entry point.
 
 Responsibilities:
-  - Instantiate the FastAPI app with metadata agents will see in /openapi.json.
+  - Instantiate the FastAPI app with LLM-optimised OpenAPI metadata.
   - Register the lifespan context (open/close the shared httpx client).
-  - Mount the /v1 router.
+  - Mount the /v1 router and the machine-discovery (LLMO) router.
   - Add CORS middleware (agents may be cross-origin HTTP clients).
   - Provide /health and /info endpoints (no payment required).
 
@@ -20,6 +20,7 @@ Environment variables (set in .env):
     OPTIMIZER_PRICE_SATS    — Satoshis per quote request (default: 10)
     MACAROON_TTL_SECONDS    — Macaroon validity window (default: 600)
     LOG_LEVEL               — Python logging level (default: INFO)
+    PUBLIC_URL              — Canonical public URL of this deployment (for discovery endpoints)
 """
 
 from __future__ import annotations
@@ -29,14 +30,17 @@ import os
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator
 
-from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.api.discovery import discovery_router
 from app.api.routes import close_http_client, router
 
-# Load .env before anything reads os.environ
-load_dotenv()
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass  # python-dotenv is optional; env vars may be set directly
 
 # ---------------------------------------------------------------------------
 # Logging
@@ -56,33 +60,21 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
-    """
-    Manages resources that should live for the full server lifetime.
-
-    On startup:
-      - Log confirmation that env vars are present (not their values).
-
-    On shutdown:
-      - Drain the shared httpx connection pool cleanly so no in-flight
-        requests are abandoned during a graceful restart.
-    """
-    # --- startup ---
     _warn_missing_env()
     logger.info("Optimizer API starting up")
     yield
-    # --- shutdown ---
     await close_http_client()
     logger.info("Optimizer API shut down cleanly")
 
 
 def _warn_missing_env() -> None:
-    """Log warnings for required environment variables that are missing."""
     required = {
         "COINOS_API_KEY": "Lightning invoice generation will fail on /v1/quote",
         "L402_SECRET":    "L402 payment gate will fail to mint/verify macaroons",
     }
     optional = {
         "ONEINCH_API_KEY": "1inch quotes may be rate-limited without an API key",
+        "PUBLIC_URL":      "Discovery endpoints will use placeholder base URL",
     }
     for var, consequence in required.items():
         if not os.environ.get(var):
@@ -93,22 +85,139 @@ def _warn_missing_env() -> None:
 
 
 # ---------------------------------------------------------------------------
-# App instantiation
+# App instantiation — rich OpenAPI metadata for LLM discovery
 # ---------------------------------------------------------------------------
+# Every string here is written to be consumed by an LLM reading the OpenAPI
+# spec, not just a human reading the Swagger UI.  Precision over brevity.
+
+_PUBLIC_URL = os.environ.get("PUBLIC_URL", "https://optimizer-api.example.com")
 
 app = FastAPI(
     title="Cross-Chain Liquidity & Execution Route Optimizer",
-    description=(
-        "B2A (Business-to-Agent) API for finding the mathematically optimal "
-        "cross-chain token swap route across Ethereum, Arbitrum, and Base. "
-        "All computation is deterministic — zero LLM, zero heuristics. "
-        "Monetised via L402 Lightning Network micropayments (Coinos)."
+
+    # summary appears in LLM tool-selection contexts (short, directive)
+    summary=(
+        "Find the cheapest cross-chain EVM token swap route. "
+        "Zero LLM, deterministic math, L402 Lightning payment."
     ),
+
+    # description is the full context an LLM reads to decide when/how to use this API.
+    # Uses Markdown so Swagger UI renders it nicely; LLMs also parse MD well.
+    description="""\
+## What this API does
+
+Given a token swap intent, this API queries **1inch** and **Li.Fi** aggregators in
+parallel, then scores every route using the **True Execution Cost (TEC)** formula:
+
+```
+TEC   = C_slippage + C_gas + C_bridge_fee + C_time_penalty
+SCORE = (amount_out × target_price_usd) − TEC − amount_in_usd
+```
+
+The route with the highest `SCORE` is returned as `optimal_route`.
+
+**Zero LLM at runtime** — every number is derived from live on-chain data.
+
+---
+
+## Who should call this API
+
+Autonomous AI agents and trading bots that need to:
+- Execute a DeFi token swap on any EVM chain
+- Compare same-chain vs cross-chain costs mathematically
+- Get slippage estimates before signing a transaction
+
+---
+
+## Payment: L402 Lightning Protocol
+
+This API charges **10 satoshis** (≈ $0.006) per query via the L402 standard.
+
+### Agent payment flow
+
+```
+1. POST /v1/quote  →  HTTP 402
+   WWW-Authenticate: L402 macaroon=<token>, invoice=<BOLT11>
+
+2. Pay the BOLT11 Lightning invoice.
+   Your wallet returns a 32-byte preimage (proof of payment).
+
+3. POST /v1/quote  (same body)
+   Authorization: L402 <macaroon>:<preimage_hex>
+   →  HTTP 200  (route data)
+```
+
+Macaroon TTL: **600 seconds** from payment.
+
+---
+
+## Supported chains & tokens
+
+**Chains:** `ethereum`, `arbitrum`, `base`, `optimism`, `polygon`
+
+**Tokens:** `ETH`, `USDC`, `USDT`, `DAI`, `WETH`
+
+---
+
+## Machine discovery
+
+| Resource | URL |
+|----------|-----|
+| LLM guide (llmstxt.org) | `/llms.txt` |
+| AI plugin manifest | `/.well-known/ai-plugin.json` |
+| Agent manifest | `/.well-known/agent-manifest.json` |
+| Schema.org structured data | `/schema.json` |
+""",
+
     version="0.1.0",
-    docs_url="/docs",       # Swagger UI — useful during development
+
+    # contact and license surface in openapi.json — read by tool registries
+    contact={
+        "name":  "Optimizer API Support",
+        "email": "peretzbatel123@gmail.com",
+    },
+
+    # Terms surface in ChatGPT plugin review and some agent directories
+    terms_of_service=f"{_PUBLIC_URL}/info",
+
+    # servers block is critical: tells LLM clients the actual base URL to call
+    servers=[
+        {
+            "url": _PUBLIC_URL,
+            "description": "Production",
+        },
+        {
+            "url": "http://localhost:8000",
+            "description": "Local development",
+        },
+    ],
+
+    docs_url="/docs",
     redoc_url="/redoc",
     openapi_url="/openapi.json",
     lifespan=lifespan,
+
+    # OpenAPI 3.1 tags with descriptions — shown in Swagger and read by LLMs
+    openapi_tags=[
+        {
+            "name": "Optimizer",
+            "description": (
+                "Core route optimization endpoint. Requires L402 Lightning payment. "
+                "Returns True Execution Cost analysis across all aggregators."
+            ),
+        },
+        {
+            "name": "System",
+            "description": "Health checks and API metadata. No payment required.",
+        },
+        {
+            "name": "Discovery",
+            "description": (
+                "Machine-discovery endpoints for AI agents, LLMs, and crawlers. "
+                "No payment required. Includes llms.txt, ai-plugin.json, robots.txt."
+            ),
+        },
+    ],
 )
 
 
@@ -118,7 +227,6 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    # Agents may call from any origin.  Tighten this for production if needed.
     allow_origins=["*"],
     allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["Authorization", "Content-Type", "Accept"],
@@ -134,7 +242,7 @@ app.add_middleware(
 async def health() -> dict:
     """
     Liveness probe — returns 200 as long as the process is running.
-    No payment required.  Used by Railway/Fly.io health checks.
+    No payment required. Used by Railway/Fly.io health checks and agent pre-flight.
     """
     return {"status": "ok"}
 
@@ -143,8 +251,11 @@ async def health() -> dict:
 async def info() -> dict:
     """
     Returns API metadata and current pricing.
-    No payment required.  Agents can call this to discover the cost before
-    committing to a /v1/quote request.
+
+    No payment required. Agents should call this before /v1/quote to discover:
+    - Current price in satoshis (may change)
+    - Macaroon TTL (how long after payment the token remains valid)
+    - Supported chains and tokens
     """
     from app.payment.coinos import PRICE_SATS
     from app.payment.l402 import MACAROON_TTL_SECONDS
@@ -153,17 +264,26 @@ async def info() -> dict:
         "name":                 "Cross-Chain Route Optimizer",
         "version":              "0.1.0",
         "price_sats_per_query": PRICE_SATS,
+        "price_usd_approx":     round(PRICE_SATS * 0.0006, 4),  # rough at BTC=$60k
         "macaroon_ttl_seconds": MACAROON_TTL_SECONDS,
+        "payment_protocol":     "L402 (Lightning Network)",
         "supported_chains":     ["ethereum", "arbitrum", "base", "optimism", "polygon"],
         "supported_tokens":     ["ETH", "USDC", "USDT", "DAI", "WETH"],
         "aggregators":          ["1inch", "lifi"],
-        "payment_protocol":     "L402 (Lightning Network)",
-        "docs":                 "/docs",
+        "discovery": {
+            "llms_txt":       "/llms.txt",
+            "ai_plugin":      "/.well-known/ai-plugin.json",
+            "agent_manifest": "/.well-known/agent-manifest.json",
+            "openapi":        "/openapi.json",
+            "schema_org":     "/schema.json",
+        },
+        "docs": "/docs",
     }
 
 
 # ---------------------------------------------------------------------------
-# Protected router
+# Routers
 # ---------------------------------------------------------------------------
 
 app.include_router(router, tags=["Optimizer"])
+app.include_router(discovery_router)
