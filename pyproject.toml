@@ -1,0 +1,43 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "mcp-cross-chain-optimizer"
+version = "0.1.0"
+description = "MCP server for Cross-Chain Liquidity & Execution Route Optimizer — find the optimal EVM token swap route via TEC analysis, gated by L402 Lightning payment"
+readme = "README.md"
+license = { text = "MIT AND Commons-Clause-1.0" }
+requires-python = ">=3.9"
+keywords = [
+    "mcp", "model-context-protocol", "defi", "cross-chain", "ethereum",
+    "arbitrum", "base", "1inch", "lifi", "l402", "lightning", "token-swap",
+    "route-optimization", "ai-agent", "autonomous-agent",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Topic :: Office/Business :: Financial",
+    "Topic :: Internet :: WWW/HTTP :: HTTP Servers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+dependencies = [
+    "mcp>=1.0.0",
+    "httpx>=0.27.0",
+]
+
+[project.scripts]
+mcp-cross-chain-optimizer = "mcp.server:main"
+
+[project.urls]
+Homepage = "https://your-domain.com"
+Repository = "https://github.com/your-username/cross-chain-optimizer"
+Documentation = "https://your-domain.com/docs"
+"Bug Tracker" = "https://github.com/your-username/cross-chain-optimizer/issues"
+
+[tool.hatch.build.targets.wheel]
+packages = ["mcp"]

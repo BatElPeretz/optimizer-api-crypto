@@ -1,9 +1,9 @@
 {
-  "_comment": "Add this block to ~/Library/Application Support/Claude/claude_desktop_config.json (Mac) or %APPDATA%/Claude/claude_desktop_config.json (Windows)",
+  "_comment": "Add this block to ~/Library/Application Support/Claude/claude_desktop_config.json (Mac) or %APPDATA%/Claude/claude_desktop_config.json (Windows). Install deps first: pip install mcp httpx",
   "mcpServers": {
     "cross-chain-optimizer": {
       "command": "python",
-      "args": ["/ABSOLUTE/PATH/TO/optimizer-api/mcp/server.py"],
+      "args": ["/ABSOLUTE/PATH/TO/cross-chain-optimizer/mcp/server.py"],
       "env": {
         "OPTIMIZER_API_URL": "https://your-domain.com",
         "OPTIMIZER_MACAROON": "",
