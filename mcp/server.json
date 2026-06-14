@@ -4,13 +4,13 @@
   "description": "Find the mathematically optimal cross-chain EVM token swap route using True Execution Cost (TEC) analysis. Compares 1inch and Li.Fi aggregators across Ethereum, Arbitrum, Base, Optimism, and Polygon. Gated by L402 Lightning Network micropayment (~10 sats per query).",
   "version": "0.1.0",
   "repository": {
-    "url": "https://github.com/your-username/cross-chain-optimizer",
-    "source": "https://github.com/your-username/cross-chain-optimizer/blob/main/mcp/server.py"
+    "url": "https://github.com/BatElPeretz/optimizer-api-crypto",
+    "source": "https://github.com/BatElPeretz/optimizer-api-crypto/blob/main/mcp/server.py"
   },
   "packages": [
     {
       "registryType": "pypi",
-      "identifier": "git+https://github.com/your-username/cross-chain-optimizer",
+      "identifier": "git+https://github.com/BatElPeretz/optimizer-api-crypto",
       "version": "0.1.0",
       "runtimeHint": "python",
       "transport": {
@@ -28,7 +28,7 @@
           "name": "OPTIMIZER_API_URL",
           "description": "Base URL of the deployed Cross-Chain Route Optimizer API",
           "required": true,
-          "example": "https://your-domain.com"
+          "example": "https://optimizer-api-crypto.onrender.com"
         },
         {
           "name": "OPTIMIZER_MACAROON",

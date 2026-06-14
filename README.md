@@ -35,7 +35,7 @@ SCORE = (amount_out × target_price_usd) − TEC − amount_in_usd
 ### Step 1 — Discover pricing
 
 ```bash
-curl https://your-domain.com/info
+curl https://optimizer-api-crypto.onrender.com/info
 ```
 
 ```json
@@ -50,7 +50,7 @@ curl https://your-domain.com/info
 ### Step 2 — Get a Lightning invoice (402 challenge)
 
 ```bash
-curl -X POST https://your-domain.com/v1/quote \
+curl -X POST https://optimizer-api-crypto.onrender.com/v1/quote \
   -H "Content-Type: application/json" \
   -d '{"token_in":"ETH","token_out":"USDC","amount_in":5.0,"amount_in_usd":18500,"target_price_usd":1.0,"chains":["arbitrum","base"]}'
 ```
@@ -64,7 +64,7 @@ WWW-Authenticate: L402 macaroon=eyJ..., invoice=lnbc100n1p...
 
 ```bash
 # After paying: your Lightning wallet returns a preimage (32-byte hex)
-curl -X POST https://your-domain.com/v1/quote \
+curl -X POST https://optimizer-api-crypto.onrender.com/v1/quote \
   -H "Content-Type: application/json" \
   -H "Authorization: L402 eyJ...:<preimage_hex>" \
   -d '{"token_in":"ETH","token_out":"USDC","amount_in":5.0,"amount_in_usd":18500,"target_price_usd":1.0,"chains":["arbitrum","base"]}'
@@ -126,7 +126,7 @@ POST /v1/quote
 ## Running locally
 
 ```bash
-git clone https://github.com/your-username/cross-chain-optimizer
+git clone https://github.com/BatElPeretz/optimizer-api-crypto
 cd cross-chain-optimizer
 pip install -r requirements.txt
 cp .env.example .env   # fill in COINOS_API_KEY and L402_SECRET

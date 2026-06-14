@@ -3,9 +3,9 @@
   "mcpServers": {
     "cross-chain-optimizer": {
       "command": "python",
-      "args": ["/ABSOLUTE/PATH/TO/cross-chain-optimizer/mcp/server.py"],
+      "args": ["/ABSOLUTE/PATH/TO/optimizer-api-crypto/mcp/server.py"],
       "env": {
-        "OPTIMIZER_API_URL": "https://your-domain.com",
+        "OPTIMIZER_API_URL": "https://optimizer-api-crypto.onrender.com",
         "OPTIMIZER_MACAROON": "",
         "OPTIMIZER_PREIMAGE": ""
       }

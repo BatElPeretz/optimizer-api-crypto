@@ -14,7 +14,7 @@ description: >
   Supports Ethereum, Arbitrum, Base, Optimism, Polygon.
   Monetised via L402 Lightning Network (≈$0.006 per query).
 
-logo: https://your-domain.com/logo.png
+logo: https://optimizer-api-crypto.onrender.com/logo.png
 categories:
   - DeFi
   - Blockchain
@@ -48,7 +48,7 @@ auth:
   auth_header: "L402 {{macaroon}}:{{preimage}}"
 
 # Point to our live OpenAPI spec
-openapi_spec_url: https://your-domain.com/openapi.json
+openapi_spec_url: https://optimizer-api-crypto.onrender.com/openapi.json
 
 # Key actions agents will use
 actions:

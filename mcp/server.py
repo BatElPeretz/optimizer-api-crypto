@@ -22,7 +22,7 @@ Installation (Claude Desktop):
            "command": "python",
            "args": ["/path/to/optimizer-api/mcp/server.py"],
            "env": {
-             "OPTIMIZER_API_URL": "https://your-domain.com",
+             "OPTIMIZER_API_URL": "https://optimizer-api-crypto.onrender.com",
              "OPTIMIZER_MACAROON": "optional-pre-paid-macaroon",
              "OPTIMIZER_PREIMAGE": "optional-preimage-hex"
            }
@@ -54,7 +54,7 @@ from mcp.server.models import InitializationOptions
 # Config
 # ---------------------------------------------------------------------------
 
-API_URL = os.environ.get("OPTIMIZER_API_URL", "https://your-domain.com").rstrip("/")
+API_URL = os.environ.get("OPTIMIZER_API_URL", "https://optimizer-api-crypto.onrender.com").rstrip("/")
 MACAROON = os.environ.get("OPTIMIZER_MACAROON", "")
 PREIMAGE = os.environ.get("OPTIMIZER_PREIMAGE", "")
 

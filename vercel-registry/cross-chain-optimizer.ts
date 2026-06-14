@@ -17,7 +17,7 @@ import { tool } from "ai";
 import { z } from "zod";
 
 const OPTIMIZER_BASE_URL =
-  process.env.OPTIMIZER_API_URL ?? "https://your-domain.com";
+  process.env.OPTIMIZER_API_URL ?? "https://optimizer-api-crypto.onrender.com";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 

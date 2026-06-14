@@ -34,10 +34,10 @@ dependencies = [
 mcp-cross-chain-optimizer = "mcp.server:main"
 
 [project.urls]
-Homepage = "https://your-domain.com"
-Repository = "https://github.com/your-username/cross-chain-optimizer"
-Documentation = "https://your-domain.com/docs"
-"Bug Tracker" = "https://github.com/your-username/cross-chain-optimizer/issues"
+Homepage = "https://optimizer-api-crypto.onrender.com"
+Repository = "https://github.com/BatElPeretz/optimizer-api-crypto"
+Documentation = "https://optimizer-api-crypto.onrender.com/docs"
+"Bug Tracker" = "https://github.com/BatElPeretz/optimizer-api-crypto/issues"
 
 [tool.hatch.build.targets.wheel]
 packages = ["mcp"]
