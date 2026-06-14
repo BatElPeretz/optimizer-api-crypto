@@ -4,7 +4,7 @@
 > **Zero LLM at runtime** — deterministic math on live on-chain data.  
 > **L402 Lightning paywall** — 10 sats (~$0.006) per query.
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![License: MIT + Commons Clause](https://img.shields.io/badge/License-MIT%20%2B%20Commons%20Clause-red.svg)](LICENSE)
 [![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://python.org)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.111+-green.svg)](https://fastapi.tiangolo.com)
 [![L402](https://img.shields.io/badge/auth-L402%20Lightning-orange.svg)](https://docs.lightning.engineering/the-lightning-network/l402)
